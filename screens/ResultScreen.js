@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar'
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Button,
@@ -17,6 +17,7 @@ import WebView from 'react-native-webview'
 import { MasonryFlashList } from '@shopify/flash-list'
 import { Avatar, Divider } from 'react-native-paper'
 import Feather from '@expo/vector-icons/Feather'
+import { getData } from '../helpers/storageHelper'
 
 const ResultScreen = ({ route }) => {
   const uploaded_url = route?.params?.url || null
@@ -24,8 +25,21 @@ const ResultScreen = ({ route }) => {
   const [imageUri, setImageUri] = useState(null)
   const [firebaseUrl, setFirebaseUrl] = useState(uploaded_url)
   const [loading, setLoading] = useState(false)
+  const [userInfo, setUserInfo] = useState(null)
   const [searchResults, setSearchResults] = useState([])
   const webViewRef = useRef(null)
+
+  const fetchUser = async () => {
+    const storedUser = await getData('userdata')
+    console.log('loggin stored user', storedUser)
+    if (storedUser?.displayName) {
+      setUserInfo(storedUser)
+    }
+  }
+
+  useEffect(() => {
+    fetchUser()
+  }, [])
 
   const googleLensURL = url =>
     `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(url)}`
@@ -110,7 +124,7 @@ const ResultScreen = ({ route }) => {
               marginRight: 10,
             }}
           />
-          <Avatar.Text size={30} label="A" />
+          <Avatar.Text size={30} label={userInfo?.displayName[0] || 'B'} />
         </View>
       </View>
 
@@ -213,6 +227,7 @@ const ResultScreen = ({ route }) => {
           onMessage={event => {
             try {
               const data = JSON.parse(event.nativeEvent.data)
+              console.log('loggin data from webview', data)
               setSearchResults(data)
             } catch (error) {
               console.error('Error parsing results:', error)

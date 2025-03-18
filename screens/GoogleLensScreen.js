@@ -137,6 +137,21 @@ const GoogleLensScreen = ({ navigation }) => {
       .catch(error => console.log('Crop error:', error))
   }
 
+  const openGallery = () => {
+    ImagePicker.openPicker({
+      width: 900,
+      height: 900,
+      cropping: true,
+      cropperCircleOverlay: false,
+      freeStyleCropEnabled: true,
+    })
+      .then(croppedImage => {
+        setstate(prevs => ({ ...prevs, photoUri: croppedImage.path }))
+        uploadImageToFirebase(croppedImage.path)
+      })
+      .catch(error => console.log('Crop error:', error))
+  }
+
   return (
     <View style={styles.container}>
       {/* Camera Preview */}
@@ -198,6 +213,10 @@ const GoogleLensScreen = ({ navigation }) => {
         </TouchableOpacity>
       </Animated.View>
 
+      <TouchableOpacity style={styles.gallerybtn} onPress={() => openGallery()}>
+        <FontAwesome name="photo" size={28} color="white" />
+      </TouchableOpacity>
+
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.optionButton}>
@@ -245,6 +264,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 160,
     left: 20,
+    borderRadius: 50,
+  },
+  gallerybtn: {
+    position: 'absolute',
+    bottom: 160,
+    right: 40,
     borderRadius: 50,
   },
 

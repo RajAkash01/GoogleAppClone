@@ -17,6 +17,8 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Linking,
+  StyleSheet,
+  Alert,
 } from 'react-native'
 import { Avatar, Divider, IconButton } from 'react-native-paper'
 import {
@@ -24,6 +26,7 @@ import {
   Ionicons,
   MaterialCommunityIcons,
   FontAwesome,
+  AntDesign,
 } from '@expo/vector-icons'
 import Animated, {
   Easing,
@@ -34,13 +37,19 @@ import Animated, {
 import { useFocusEffect } from '@react-navigation/native'
 import GoogleLens from '../assets/svg/googlelens.svg'
 import GoogleMic from '../assets/svg/googlemic.svg'
-import BottomSheet from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin'
+import auth from '@react-native-firebase/auth'
+import { getData, removeData, setData } from '../helpers/storageHelper'
 
 const API_KEY = 'fb4a94a21b9e4168a458d4d08657ff24'
 const NEWS_URL = `https://newsapi.org/v2/top-headlines?country=us&category=technology&apiKey=${API_KEY}`
 GoogleSignin.configure({
   webClientId:
-    '339677469375-inrde1v4hrjjspfrj3n0lber1bkr41hj.apps.googleusercontent.com',
+    '339677469375-d8iaj29qoj53epp80h714kehdr84bc9k.apps.googleusercontent.com',
 })
 
 const HomeScreen = ({ navigation }) => {
@@ -48,7 +57,7 @@ const HomeScreen = ({ navigation }) => {
   const opacity = useSharedValue(1)
   const screenopacity = useSharedValue(1)
   const sheetRef = React.useRef(null)
-  const animatedHeight = useSharedValue(0)
+  const [userInfo, setUserInfo] = useState(null)
 
   const [news, setNews] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +66,7 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchNews()
+    fetchUser()
   }, [])
 
   useFocusEffect(
@@ -66,16 +76,41 @@ const HomeScreen = ({ navigation }) => {
   )
 
   const signInWithGoogle = async () => {
-    try {
-      await GoogleSignin.hasPlayServices()
-      const { idToken } = await GoogleSignin.signIn()
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken)
-      const userCredential = await auth().signInWithCredential(googleCredential)
-      setUserInfo(userCredential.user)
-      sheetRef.current?.expand()
-      animatedHeight.value = withTiming(300, { duration: 500 })
-    } catch (error) {
-      console.error(error)
+    sheetRef.current?.snapToIndex(1)
+
+    if (!userInfo?.displayName) {
+      try {
+        await GoogleSignin.hasPlayServices({
+          showPlayServicesUpdateDialog: true,
+        })
+
+        const signInResult = await GoogleSignin.signIn()
+
+        let idToken = signInResult?.data.idToken
+        if (!idToken) {
+          console.error('No ID token found in signInResult')
+          return
+        }
+
+        const googleCredential = auth.GoogleAuthProvider.credential(idToken)
+
+        const userCredential =
+          await auth().signInWithCredential(googleCredential)
+
+        setUserInfo(userCredential.user)
+        setData('userdata', userCredential.user)
+        console.log('loggin user', userCredential.user)
+      } catch (error) {
+        console.error('Error in signInWithGoogle:', error)
+      }
+    }
+  }
+
+  const fetchUser = async () => {
+    const storedUser = await getData('userdata')
+    console.log('loggin stored user', storedUser)
+    if (storedUser?.displayName) {
+      setUserInfo(storedUser)
     }
   }
 
@@ -145,6 +180,27 @@ const HomeScreen = ({ navigation }) => {
     }, 500)
   }
 
+  const signOut = async () => {
+    Alert.alert('Task Alert!', 'If you want to log out you can do this now?', [
+      { text: 'No' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            await GoogleSignin.signOut()
+            await auth().signOut()
+            setUserInfo(null)
+            await removeData('recentSearches')
+            await removeData('userdata')
+            sheetRef.current?.close()
+          } catch (error) {
+            console.error(error)
+          }
+        },
+      },
+    ])
+  }
+
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <Animated.View
@@ -178,11 +234,27 @@ const HomeScreen = ({ navigation }) => {
               <MaterialIcons name="search" size={18} color="#FFF" />
               <Text style={{ color: 'white', marginLeft: 5 }}>Search</Text>
             </TouchableOpacity>
-            <Avatar.Text
-              size={30}
-              label="A"
-              style={{ backgroundColor: '#3E3E3E' }}
-            />
+            {userInfo?.displayName ? (
+              <TouchableOpacity onPress={() => signInWithGoogle()}>
+                <Avatar.Text
+                  size={30}
+                  label={userInfo?.displayName[0] || 'B'}
+                  style={{ backgroundColor: '#3E3E3E' }}
+                />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={() => signInWithGoogle()}>
+                <Text
+                  style={{
+                    color: 'black',
+                    padding: 5,
+                    backgroundColor: 'white',
+                    borderRadius: 10,
+                  }}>
+                  Login
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Google Title */}
@@ -362,23 +434,239 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </ScrollView>
 
-        <BottomSheet ref={sheetRef} snapPoints={['30%', '50%']}>
-          {userInfo && (
-            <View style={{ alignItems: 'center', padding: 20 }}>
-              <Image
-                source={{ uri: userInfo.photoURL }}
-                style={{ width: 80, height: 80, borderRadius: 40 }}
-              />
-              <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
-                {userInfo.displayName}
-              </Text>
-              <Text>{userInfo.email}</Text>
+        <BottomSheet
+          ref={sheetRef}
+          index={-1}
+          style={{ marginHorizontal: 10 }}
+          snapPoints={['50%', '85', '95%']}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.handleIndicator}
+          enablePanDownToClose>
+          <BottomSheetView style={styles.contentContainer}>
+            <Text style={styles.title}>Google</Text>
+
+            <View style={[styles.menuItem, { paddingHorizontal: 18 }]}>
+              {userInfo?.displayName && (
+                <Avatar.Text
+                  size={35}
+                  label={userInfo?.displayName[0] || 'B'}
+                  style={{ marginRight: 10 }}
+                />
+              )}
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}>
+                <View>
+                  <Text style={styles.menuText}>
+                    {userInfo?.displayName || 'No name'}
+                  </Text>
+                  <Text style={styles.menuText}>
+                    {userInfo?.email || 'No email'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={{
+                    borderWidth: 1,
+                    borderRadius: 30,
+                    borderColor: 'white',
+                    alignSelf: 'center',
+                  }}
+                  onPress={signOut}>
+                  <MaterialIcons
+                    name="keyboard-arrow-down"
+                    size={24}
+                    color="white"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
-          )}
+            <TouchableOpacity
+              style={{
+                borderWidth: 1,
+                borderColor: 'white',
+                borderRadius: 30,
+                padding: 8,
+                marginTop: 6,
+                marginBottom: 10,
+                marginRight: 10,
+                alignSelf: 'center',
+              }}
+              onPress={signOut}>
+              <Text style={{ color: 'white' }}>Manage your Google Account</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.menuItem}>
+              <MaterialCommunityIcons
+                name="incognito"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Turn on Incognito</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.menuItem}>
+              <MaterialIcons
+                name="history"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Search history</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.menuItem, { marginLeft: 40 }]}>
+              <Text style={styles.menuText}>Delete last 15 mins</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.menuItem}>
+              <AntDesign
+                name="Safety"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>SafeSearch</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <MaterialIcons
+                name="interests"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Interests</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <MaterialIcons
+                name="vpn-key"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Passwords</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <Ionicons
+                name="person-circle"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Your profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.menuItem]}>
+              <MaterialCommunityIcons
+                name="star-four-points"
+                size={18}
+                color="black"
+                style={[
+                  styles.icon,
+                  {
+                    padding: 0.2,
+                    backgroundColor: 'white',
+                    transform: [{ rotate: '40deg' }],
+                    marginLeft: 5,
+                  },
+                ]}
+              />
+              <Text style={styles.menuText}>Search Personalization</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.menuItem}>
+              <MaterialIcons
+                name="settings"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Settings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <MaterialIcons
+                name="help"
+                size={24}
+                color="white"
+                style={styles.icon}
+              />
+              <Text style={styles.menuText}>Help & Feedback</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+          </BottomSheetView>
         </BottomSheet>
       </Animated.View>
     </TouchableWithoutFeedback>
   )
 }
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+  },
+  openButton: {
+    backgroundColor: '#1e1e1e',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  openButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  bottomSheetBackground: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 20,
+  },
+  handleIndicator: {
+    backgroundColor: '#1e1e1e',
+    width: 60,
+    height: 5,
+    borderRadius: 3,
+  },
+  contentContainer: {},
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 27,
+  },
+  icon: {
+    marginRight: 15,
+  },
+  menuText: {
+    fontSize: 16,
+    color: 'white',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#333',
+    marginVertical: 5,
+  },
+})
 export default HomeScreen

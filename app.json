@@ -15,11 +15,18 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
-      "bundleIdentifier": "com.akash_raj.GoogleApp"
+      "bundleIdentifier": "com.akash_raj.GoogleApp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera.",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone.",
+        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +34,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.akash_raj.GoogleApp",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -55,7 +66,15 @@
           ]
         }
       ],
-      ["@react-native-google-signin/google-signin"]
-    ]
+      [
+        "@react-native-google-signin/google-signin"
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ffef8da0-04d8-4a5d-8c29-4c6e15ffbe1b"
+      }
+    },
+    "owner": "akash_raj"
   }
 }
