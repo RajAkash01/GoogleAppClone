@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "339677469375",
+    "project_id": "food-recipe-app-d68b3",
+    "storage_bucket": "food-recipe-app-d68b3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:339677469375:android:0f572dcf2ba33f468f040a",
+        "android_client_info": {
+          "package_name": "com.akash_raj.GoogleApp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "339677469375-inrde1v4hrjjspfrj3n0lber1bkr41hj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.akash_raj.GoogleApp",
+            "certificate_hash": "4bafadf0bfeff4a4078f610a9914046059059862"
+          }
+        },
+        {
+          "client_id": "339677469375-d8iaj29qoj53epp80h714kehdr84bc9k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAO5C90an3n-jN7s6PqKBrgnAklL_bVTjc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "339677469375-d8iaj29qoj53epp80h714kehdr84bc9k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
