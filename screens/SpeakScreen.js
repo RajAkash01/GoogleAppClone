@@ -7,7 +7,6 @@ import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition'
-import { useFocusEffect } from '@react-navigation/native'
 
 function SpeakScreen({ navigation }) {
   const animation = useRef(null)
@@ -36,7 +35,6 @@ function SpeakScreen({ navigation }) {
       console.warn('Permissions not granted', result)
       return
     }
-    // Start speech recognition
     ExpoSpeechRecognitionModule.start({
       lang: 'en-US',
       interimResults: true,

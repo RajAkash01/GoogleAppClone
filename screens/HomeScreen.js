@@ -99,7 +99,6 @@ const HomeScreen = ({ navigation }) => {
 
         setUserInfo(userCredential.user)
         setData('userdata', userCredential.user)
-        console.log('loggin user', userCredential.user)
       } catch (error) {
         console.error('Error in signInWithGoogle:', error)
       }
@@ -108,7 +107,6 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchUser = async () => {
     const storedUser = await getData('userdata')
-    console.log('loggin stored user', storedUser)
     if (storedUser?.displayName) {
       setUserInfo(storedUser)
     }

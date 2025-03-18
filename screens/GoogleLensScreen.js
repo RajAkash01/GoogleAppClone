@@ -6,7 +6,6 @@ import {
   Button,
   StyleSheet,
   Image,
-  Linking,
 } from 'react-native'
 import {
   Camera,
@@ -17,11 +16,11 @@ import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons'
 import Animated, {
   Easing,
   withTiming,
-  useSharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated'
 import ImagePicker from 'react-native-image-crop-picker'
 import storage from '@react-native-firebase/storage'
+import LottieView from 'lottie-react-native'
 
 const GoogleLensScreen = ({ navigation }) => {
   const [facing, setFacing] = useState('back')
@@ -31,13 +30,11 @@ const GoogleLensScreen = ({ navigation }) => {
     torch: 'off',
     photoUri: null,
     progress: 0,
+    to_show_glow: false,
   })
 
-  // Get the device camera (back or front)
   const device = useCameraDevice(facing)
 
-  // Animated search button effect
-  const scale = useSharedValue(0.8)
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [
       {
@@ -74,7 +71,10 @@ const GoogleLensScreen = ({ navigation }) => {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePhoto({ quality: 100 })
       const imagePath = 'file://' + photo.path
-      openCropper(imagePath)
+      setstate(prevs => ({ ...prevs, photoUri: imagePath, to_show_glow: true }))
+      setTimeout(() => {
+        openCropper(imagePath)
+      }, 2000)
     }
   }
   function toggleFlash() {
@@ -88,8 +88,6 @@ const GoogleLensScreen = ({ navigation }) => {
   }
 
   const uploadImageToFirebase = async uri => {
-    console.log('Uploading image...')
-
     try {
       const filename = `images/${Date.now()}.jpg`
       const reference = storage().ref(filename)
@@ -111,16 +109,6 @@ const GoogleLensScreen = ({ navigation }) => {
     }
   }
 
-  const searchImageOnGoogle = async imageUri => {
-    try {
-      const googleLensURL = `https://lens.google.com/uploadbyurl?url=${imageUri}`
-      console.log('logging lens url', googleLensURL)
-      await Linking.openURL(googleLensURL)
-    } catch (error) {
-      console.error('Error opening Google Lens:', error)
-    }
-  }
-
   const openCropper = imagePath => {
     ImagePicker.openCropper({
       path: imagePath,
@@ -131,7 +119,10 @@ const GoogleLensScreen = ({ navigation }) => {
       freeStyleCropEnabled: true,
     })
       .then(croppedImage => {
-        setstate(prevs => ({ ...prevs, photoUri: croppedImage.path }))
+        setstate(prevs => ({
+          ...prevs,
+          photoUri: croppedImage.path,
+        }))
         uploadImageToFirebase(croppedImage.path)
       })
       .catch(error => console.log('Crop error:', error))
@@ -154,7 +145,15 @@ const GoogleLensScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Camera Preview */}
+      {state.to_show_glow && (
+        <LottieView
+          source={require('../assets/lottie/glow.json')}
+          autoPlay
+          loop
+          style={styles.glowAnimation}
+        />
+      )}
+
       {!state.photoUri ? (
         <Camera
           style={styles.camera}
@@ -168,7 +167,6 @@ const GoogleLensScreen = ({ navigation }) => {
         <Image source={{ uri: state.photoUri }} style={{ flex: 1 }} />
       )}
 
-      {/* Flip Camera Button */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}>
@@ -196,15 +194,6 @@ const GoogleLensScreen = ({ navigation }) => {
         </View>
       )}
 
-      {/* Overlay Scan Area */}
-      {/* <View style={styles.scanOverlay}>
-        <View style={styles.cornerTopLeft} />
-        <View style={styles.cornerTopRight} />
-        <View style={styles.cornerBottomLeft} />
-        <View style={styles.cornerBottomRight} />
-      </View> */}
-
-      {/* Floating Search Button */}
       <Animated.View style={[styles.searchButton, buttonStyle]}>
         <TouchableOpacity
           style={styles.buttonInner}
@@ -217,7 +206,6 @@ const GoogleLensScreen = ({ navigation }) => {
         <FontAwesome name="photo" size={28} color="white" />
       </TouchableOpacity>
 
-      {/* Bottom Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.optionButton}>
           <Ionicons name="language-outline" size={20} color="white" />
@@ -236,12 +224,17 @@ const GoogleLensScreen = ({ navigation }) => {
   )
 }
 
-// Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   camera: { flex: 1 },
-
-  // Flip Camera Button
+  glowAnimation: {
+    position: 'absolute',
+    top: 110,
+    width: '100%',
+    height: '50%',
+    backgroundColor: 'transparent',
+    zIndex: 1,
+  },
   flipButton: {
     position: 'absolute',
     top: 50,
@@ -272,8 +265,6 @@ const styles = StyleSheet.create({
     right: 40,
     borderRadius: 50,
   },
-
-  // Scan Overlay
   scanOverlay: {
     position: 'absolute',
     top: '30%',
@@ -326,8 +317,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderColor: 'white',
   },
-
-  // Floating Search Button
   searchButton: { position: 'absolute', bottom: '18%', alignSelf: 'center' },
   buttonInner: {
     backgroundColor: 'white',
@@ -336,7 +325,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  // Bottom Bar
   bottomBar: {
     position: 'absolute',
     bottom: 0,

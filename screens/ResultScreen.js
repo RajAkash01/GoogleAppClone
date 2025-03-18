@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar'
 import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
@@ -7,12 +6,8 @@ import {
   ActivityIndicator,
   Text,
   TouchableOpacity,
-  ScrollView,
-  Dimensions,
   useWindowDimensions,
 } from 'react-native'
-// import storage from '@react-native-firebase/storage';
-// import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import WebView from 'react-native-webview'
 import { MasonryFlashList } from '@shopify/flash-list'
 import { Avatar, Divider } from 'react-native-paper'
@@ -22,16 +17,13 @@ import { getData } from '../helpers/storageHelper'
 const ResultScreen = ({ route }) => {
   const uploaded_url = route?.params?.url || null
   const { height, width } = useWindowDimensions()
-  const [imageUri, setImageUri] = useState(null)
   const [firebaseUrl, setFirebaseUrl] = useState(uploaded_url)
-  const [loading, setLoading] = useState(false)
   const [userInfo, setUserInfo] = useState(null)
   const [searchResults, setSearchResults] = useState([])
   const webViewRef = useRef(null)
 
   const fetchUser = async () => {
     const storedUser = await getData('userdata')
-    console.log('loggin stored user', storedUser)
     if (storedUser?.displayName) {
       setUserInfo(storedUser)
     }

@@ -1,23 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   View,
   TextInput,
   Text,
   ScrollView,
-  Switch,
   TouchableOpacity,
   Linking,
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import {
-  MaterialIcons,
-  Feather,
-  Ionicons,
-  FontAwesome,
-  MaterialCommunityIcons,
-  EvilIcons,
-} from '@expo/vector-icons'
+import { Feather, Ionicons, EvilIcons } from '@expo/vector-icons'
 import { Divider } from 'react-native-paper'
 import { StyleSheet } from 'react-native'
 import Animated, {
@@ -27,8 +19,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import { useFocusEffect } from '@react-navigation/native'
-import { getData, setData, removeData } from '../helpers/storageHelper'
+import { getData, setData } from '../helpers/storageHelper'
 import GoogleLens from '../assets/svg/googlelens.svg'
 import GoogleMic from '../assets/svg/googlemic.svg'
 
@@ -37,7 +28,6 @@ const RECENT_SEARCHES_KEY = 'recentSearches'
 const SearchScreen = ({ navigation, route }) => {
   const scale = useSharedValue(0.2)
   const opacity = useSharedValue(0)
-  const [incognito, setIncognito] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState([])
   const [state, setstate] = useState({
@@ -73,6 +63,7 @@ const SearchScreen = ({ navigation, route }) => {
         const url = `http://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(searchQuery)}`
         const response = await fetch(url)
         const result = await response.json()
+        console.log('loggin suggestion result', result)
 
         setstate(prev => ({
           ...prev,
@@ -175,7 +166,6 @@ const SearchScreen = ({ navigation, route }) => {
   }
 
   const handleOnPress = item => {
-    console.log('logging on press', item)
     setSearchQuery(item)
     performSearch(item)
   }
