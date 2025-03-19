@@ -60,7 +60,7 @@ const SearchScreen = ({ navigation, route }) => {
       setstate(prev => ({ ...prev, loading: true }))
 
       try {
-        const url = `http://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(searchQuery)}`
+        const url = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(searchQuery)}`
         const response = await fetch(url)
         const result = await response.json()
         console.log('loggin suggestion result', result)
